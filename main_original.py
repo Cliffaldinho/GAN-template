@@ -46,7 +46,7 @@ from torchvision import transforms
 
 from discriminator_model_control import Discriminator
 
-from generator_model_control import Generator
+from generator_model_debugging import Generator
 
 
 def _parse_args():

@@ -48,7 +48,7 @@ from DayDuskDataset import *
 # from generator_model_control import Generator
 # from discriminator_model_control import Discriminator
 
-from generator_model_control import Generator
+from generator_model_debugging import Generator
 from discriminator_model_debugging import Discriminator
 
 

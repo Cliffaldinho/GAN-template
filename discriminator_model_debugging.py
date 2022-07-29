@@ -92,8 +92,6 @@ class Discriminator(nn.Module):
     # either a y fake or a y real
     def forward(self, x):
 
-        #x = torch.cat([x, y], dim=1)  # concatentate x and y along the first dimension
-
         x = self.initial(x)  # send it through the initial thing
 
         model_x_result = self.model(x)
