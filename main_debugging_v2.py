@@ -91,12 +91,12 @@ def list_splitter(list_to_split, ratio):
 def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, runtime_log_file_name):
     total_output = ''
 
-    #loop = tqdm(loader, leave=True)
+    # loop = tqdm(loader, leave=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    #for idx, (x, y) in enumerate(loop):
-    for idx, (x,y) in enumerate(loader):
+    # for idx, (x, y) in enumerate(loop):
+    for idx, (x, y) in enumerate(loader):
 
         # train discriminator
         opt_disc.zero_grad()
@@ -132,12 +132,20 @@ def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, 
         G_loss.backward()
         opt_gen.step()
 
-        #if idx == (len(loop) - 1):
+        # if idx == (len(loop) - 1):
         if idx == (len(loader) - 1):
+            """
             print(
                 f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, G fake loss: {G_fake_loss}, L1 loss: {L1}]')
 
             output = f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, G fake loss: {G_fake_loss}, L1 loss: {L1}]\n'
+            total_output += output
+            """
+
+            print(
+                f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, L1 loss: {L1}]')
+
+            output = f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, L1 loss: {L1}]\n'
             total_output += output
 
     runtime_log = get_json_file_from_s3(runtime_log_folder, runtime_log_file_name)
