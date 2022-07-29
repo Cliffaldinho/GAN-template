@@ -133,7 +133,6 @@ def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, 
         L1 = l1(y_fake, y) * args.l1_lambda
 
         G_loss = G_fake_loss + L1
-        G_loss = L1
 
         G_loss.backward()
         opt_gen.step()
