@@ -1,27 +1,23 @@
-# Copy of main file with main run stuff and train function
-# In the process of debugging
-
 import argparse
 import ast
 import numpy as np
 from scipy import linalg
-from torch.nn.functional import adaptive_avg_pool2d
-from torch.utils.data.distributed import DistributedSampler
 
 import json
 import torch
 import torch.optim as optim
 import torch.nn as nn
+
 from torch.utils.data import DataLoader
 from tqdm import tqdm  # tqdm for progress
-from torch.utils.tensorboard import SummaryWriter
-from torchvision.utils import save_image
+
 import io
 from Runtime import *
 from utils import *
 from ImageDataset import *
 import random
 from torchvision import transforms
+from DayDuskDataset import *
 
 # from generator_model import Generator # import generator
 # from discriminator_model import Discriminator # import discriminator
@@ -46,8 +42,11 @@ from torchvision import transforms
 # from generator_model_layer512_control import Generator
 # from generator_model_layer512_replacement import Generator
 # from discriminator_model_control import Discriminator
-# from generator_model_control import Generator
+
+# from generator_model_replacement import Generator
 # from discriminator_model_reduce_downsampling import Discriminator
+# from generator_model_control import Generator
+# from discriminator_model_control import Discriminator
 
 from generator_model_control import Generator
 from discriminator_model_debugging import Discriminator
@@ -72,9 +71,12 @@ def _parse_args():
 
     parser.add_argument('-checkpoint_disc', dest='checkpoint_disc', type=str)
     parser.add_argument('-checkpoint_gen', dest='checkpoint_gen', type=str)
+    # parser.add_argument('--sm-hps', type=json.loads, default=os.environ['SM_HPS']
+    # parser.add_argument('-SM_HP_RUNTIME_VAR', dest='SM_HP_RUNTIME_VAR', type = str)
 
     with open('config.json', 'r') as f:
         parser.set_defaults(**json.load(f))
+    # args = parser.parse_args()
     args, unknown = parser.parse_known_args()
 
     return args
@@ -86,9 +88,7 @@ def list_splitter(list_to_split, ratio):
     return [list_to_split[:middle], list_to_split[middle:]]
 
 
-def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, g_scaler, d_scaler, runtime_log_folder,
-             runtime_log_file_name):
-
+def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, runtime_log_file_name):
     total_output = ''
 
     loop = tqdm(loader, leave=True)
@@ -100,7 +100,7 @@ def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, g_scaler, d_scaler, 
         y = y.to(device)
 
         # train discriminator
-        # with torch.cuda.amp.autocast():
+        opt_disc.zero_grad()
         y_fake = gen(x)
 
         disc_input_real = torch.cat([x, y], dim=1)
@@ -109,28 +109,21 @@ def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, g_scaler, d_scaler, 
         disc_input_fake = torch.cat([x, y_fake], dim=1)
         D_fake = disc(disc_input_fake.detach())
 
-        # D_real = disc(x, y)
-        # D_fake = disc(x, y_fake.detach())
-        # use detach so as to avoid breaking computational graph when do optimizer.step on discriminator
-        # can use detach, or when do loss.backward put loss.backward(retain_graph = True)
-
         D_real_loss = bce(D_real, torch.ones_like(D_real))
         D_fake_loss = bce(D_fake, torch.zeros_like(D_fake))
 
         D_loss = (D_real_loss + D_fake_loss) / 2
 
-        opt_disc.zero_grad()
-        # d_scaler.scale(D_loss).backward()
-        # d_scaler.step(opt_disc)
-        # d_scaler.update()
+        D_loss.backward()
+        opt_disc.step()
 
         # train generator
-        # with torch.cuda.amp.autocast():
+
+        opt_gen.zero_grad()
         fake_gen = torch.cat([x, y_fake], dim=1)
         D_fake = disc(fake_gen)
 
         # compute fake loss
-        # trick discriminator to believe these are real, hence send in torch.oneslikedfake
         G_fake_loss = bce(D_fake, torch.ones_like(D_fake))
 
         # compute L1 loss
@@ -138,16 +131,8 @@ def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, g_scaler, d_scaler, 
 
         G_loss = G_fake_loss + L1
 
-        opt_gen.zero_grad()
-        # g_scaler.scale(G_loss).backward()
-        # g_scaler.step(opt_gen)
-        # g_scaler.update()
-
-        if idx % 10 == 0:
-            loop.set_postfix(
-                D_real=torch.sigmoid(D_real).mean().item(),
-                D_fake=torch.sigmoid(D_fake).mean().item(),
-            )
+        G_loss.backward()
+        opt_gen.step()
 
         if idx == (len(loop) - 1):
             print(
@@ -200,6 +185,7 @@ if __name__ == '__main__':
         pairs = Boto.s3_client.list_objects(Bucket=Boto.bucket_name, Prefix=proj_key, Delimiter='/')
         for pair in pairs.get('CommonPrefixes'):
             pair_key = pair.get('Prefix')
+
             pair_keys_list.append(pair_key)
 
     random.shuffle(pair_keys_list)
@@ -234,9 +220,6 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, pin_memory=True, drop_last=True)
     print("Length val loader ", len(val_loader))
 
-    g_scaler = torch.cuda.amp.GradScaler()
-    d_scaler = torch.cuda.amp.GradScaler()
-
     runtime_dict = ast.literal_eval(os.environ['SM_HP_RUNTIME_VAR'])
     log_model_name = runtime_dict['model_name']
     log_dataset_name = runtime_dict['dataset_name']
@@ -249,17 +232,15 @@ if __name__ == '__main__':
     upload_json_file_to_s3(runtime_log_folder, runtime_log_file_name, json.dumps(runtime_log))
 
     for epoch in range(args.num_epochs):
-    # for epoch in range(21,args.num_epochs):
 
         train_fn(disc=disc, gen=gen, loader=train_loader, opt_disc=opt_disc, opt_gen=opt_gen, l1=L1_LOSS, bce=BCE,
-                 g_scaler=g_scaler, d_scaler=d_scaler, runtime_log_folder=runtime_log_folder,
-                 runtime_log_file_name=runtime_log_file_name)
+                 runtime_log_folder=runtime_log_folder, runtime_log_file_name=runtime_log_file_name)
 
-        # if args.save_model and epoch % 10 == 0:
-        if args.save_model and epoch == 30:
+        if args.save_model and epoch % 10 == 0:
             save_checkpoint(gen, opt_gen, epoch, args.checkpoint_gen)
             save_checkpoint(disc, opt_disc, epoch, args.checkpoint_disc)
 
         save_some_examples(gen, val_loader, epoch)
+
 
 
