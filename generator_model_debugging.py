@@ -19,7 +19,11 @@ class Block(nn.Module):
             # do it in each of the conv layer
 
             nn.Conv2d(in_channels, out_channels, 4, 2, 1, bias=False, padding_mode='reflect') if down  # downward
-            else nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=False),  # upward
+            #else nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=False),  # upward
+            else nn.Sequential(
+                nn.Upsample(scale_factor=4, mode='nearest'),
+                nn.Conv2d(in_channels, out_channels, 4, 2, 1, bias=False, padding_mode='reflect')
+            ),
 
             # nn.BatchNorm2d(out_channels), # replaced with instancenorm2d
             nn.InstanceNorm2d(out_channels, affine=True),
