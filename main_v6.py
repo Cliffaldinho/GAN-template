@@ -56,8 +56,7 @@ from torchvision import transforms
 
 # from generator_model_replacement import Generator
 
-from generator_model_residuals import Generator
-#from generator_model_replacement_debugging import Generator
+from generator_model_replacement_debugging import Generator
 # from generator_model_layer512_replacement_debugging_3_1 import Generator
 from discriminator_model_debugging import Discriminator
 
@@ -103,7 +102,7 @@ def list_splitter(list_to_split, ratio):
 # removed tqdm loop
 # corrected calculations of D real loss and D fake loss
 # concatenated discriminator inputs before sending it to the discriminator
-# generator compute residual rather than output
+# generator compute residual
 def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, runtime_log_file_name):
     total_output = ''
 
@@ -299,7 +298,7 @@ if __name__ == '__main__':
                  runtime_log_folder=runtime_log_folder, runtime_log_file_name=runtime_log_file_name)
 
         if args.save_model and epoch % 10 == 0:
-        #if args.save_model and epoch % 50 == 0:
+            # if args.save_model and epoch % 50 == 0:
             save_checkpoint(gen, opt_gen, epoch, args.checkpoint_gen)
             save_checkpoint(disc, opt_disc, epoch, args.checkpoint_disc)
 
