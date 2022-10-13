@@ -18,8 +18,8 @@ class Block(nn.Module):
 
             nn.Conv2d(in_channels, out_channels, 4, 2, 1, bias=False, padding_mode='reflect') if down else
             nn.Sequential(
-                nn.Upsample(scale_factor=4,mode='nearest'),
-                nn.Conv2d(in_channels,out_channels, 4, 2, 1, bias=False, padding_mode='reflect')
+                nn.Upsample(scale_factor=2,mode='nearest'),
+                nn.Conv2d(in_channels,out_channels, 4, 1, 1, bias=False, padding_mode='reflect')
 
             ),
 
@@ -103,7 +103,7 @@ class Generator(nn.Module):
         # in_channels because want it to be where it was originally
         self.final_up = nn.Sequential(
             #nn.ConvTranspose2d(features * 2, in_channels, kernel_size=4, stride=2, padding=1),
-            nn.Upsample(scale_factor=4, mode='nearest'),
+            nn.Upsample(scale_factor=2, mode='nearest'),
             nn.Conv2d(features * 2, in_channels, 3, 1, 1, bias=False, padding_mode='reflect'),
 
 
