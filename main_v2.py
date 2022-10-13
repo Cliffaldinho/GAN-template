@@ -17,7 +17,7 @@ from utils import *
 from image_dataset_v1 import *
 import random
 from torchvision import transforms
-from DayDuskDataset import *
+# from DayDuskDataset import *
 
 # from generator_model import Generator # import generator
 # from discriminator_model import Discriminator # import discriminator
@@ -48,7 +48,16 @@ from DayDuskDataset import *
 # from generator_model_control import Generator
 # from discriminator_model_control import Discriminator
 
-from generator_model_debugging import Generator
+# from generator_model_debugging import Generator
+# from discriminator_model_debugging import Discriminator
+
+# from generator_model_layer1024_replacement_debugging import Generator
+# from discriminator_model_layer1024_debugging import Discriminator
+
+# from generator_model_replacement import Generator
+
+from generator_model_replacement_debugging import Generator
+# from generator_model_layer512_replacement_debugging_3_1 import Generator
 from discriminator_model_debugging import Discriminator
 
 
@@ -88,14 +97,16 @@ def list_splitter(list_to_split, ratio):
     return [list_to_split[:middle], list_to_split[middle:]]
 
 
+# changed (corrected errors) from main_v1
+# removed autocast and scaling from v1 (as it hinders image quality)
+# removed tqdm loop
+# corrected calculations of D real loss and D fake loss
+# concatenated discriminator inputs before sending it to the discriminator
 def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, runtime_log_file_name):
     total_output = ''
 
-    # loop = tqdm(loader, leave=True)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # for idx, (x, y) in enumerate(loop):
     for idx, (x, y) in enumerate(loader):
 
         # train discriminator
@@ -121,32 +132,73 @@ def train_fn(disc, gen, loader, opt_disc, opt_gen, l1, bce, runtime_log_folder, 
         opt_disc.step()
 
         # train generator
-
         opt_gen.zero_grad()
+        fake_gen = torch.cat([x, y_fake], dim=1)
+        # print("Initialize Generator")
+        # print("fake_gen")
+        # print(type(fake_gen))
+        # print(fake_gen.size())
+        D_fake = disc(fake_gen)
+        # print("D_fake")
+        # print(type(D_fake))
+        # print(D_fake.size())
+
+        # compute fake loss
+        # print("Compute G fake loss")
+        # print("D_fake as input")
+        # print(type(D_fake))
+        # print(D_fake.size())
+        # print(D_fake)
+        # print("torch.ones_like(D_fake) as input")
+        # print(type(torch.ones_like(D_fake)))
+        # print(torch.ones_like(D_fake).size())
+        # print(torch.ones_like(D_fake))
+        G_fake_loss = bce(D_fake, torch.ones_like(D_fake))
+        # print("G_fake_loss")
+        # print(type(G_fake_loss))
+        # print(G_fake_loss.size())
+        # print(G_fake_loss)
 
         # compute L1 loss
+        # print("Compute L1 loss")
+        # print("y_fake as input")
+        # print(type(y_fake))
+        # print(y_fake.size())
+        # print(y_fake)
+        # print("y as input")
+        # print(type(y))
+        # print(y.size())
+        # print(y)
+        # print("l1 as output of y_fake and y")
+        # print(type(l1(y_fake, y)))
+        # print((l1(y_fake, y)).size())
+        # print(l1(y_fake,y))
+        # print("args.l1_lambda")
+        # print(type(args.l1_lambda))
+        # print(args.l1_lambda)
         L1 = l1(y_fake, y) * args.l1_lambda
+        # print("L1")
+        # print(type(L1))
+        # print(L1)
+        # print(L1.size())
 
-        G_loss = L1
+        # compute G_loss
+        G_loss = G_fake_loss + L1
+        # print(type(G_loss))
+        # print(G_loss.size())
 
         G_loss.backward()
         opt_gen.step()
 
-        # if idx == (len(loop) - 1):
+        # print()
+
         if idx == (len(loader) - 1):
-            """
             print(
                 f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, G fake loss: {G_fake_loss}, L1 loss: {L1}]')
 
             output = f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, G fake loss: {G_fake_loss}, L1 loss: {L1}]\n'
             total_output += output
-            """
-
-            print(
-                f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, L1 loss: {L1}]')
-
-            output = f'[Epoch {epoch}/{args.num_epochs} (b: {idx})] [D loss: {D_loss}, D real loss: {D_real_loss}, D fake loss: {D_fake_loss}] [G loss: {G_loss}, L1 loss: {L1}]\n'
-            total_output += output
+    # print()
 
     runtime_log = get_json_file_from_s3(runtime_log_folder, runtime_log_file_name)
     runtime_log += total_output
@@ -165,7 +217,7 @@ if __name__ == '__main__':
     # initialize optimizer
     opt_disc = optim.Adam(disc.parameters(), lr=args.learning_rate,
                           betas=(0.5, 0.999))  # betas for Adam optimizer as per paper
-    opt_gen = optim.Adam(gen.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
+    opt_gen = optim.Adam(gen.parameters(), lr=args.learning_rate * 10, betas=(0.5, 0.999))
 
     # BCE loss - binary cross entropy + sigmoid function = BCE with logits
     BCE = nn.BCEWithLogitsLoss()
@@ -205,7 +257,7 @@ if __name__ == '__main__':
     print("Val dataset size: ", len(test_list))
 
     transforms = transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((1024, 1024)),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 
@@ -238,12 +290,14 @@ if __name__ == '__main__':
     runtime_log_file_name = 'output_log'
     upload_json_file_to_s3(runtime_log_folder, runtime_log_file_name, json.dumps(runtime_log))
 
+    # for epoch in range(101,args.num_epochs):
     for epoch in range(args.num_epochs):
 
         train_fn(disc=disc, gen=gen, loader=train_loader, opt_disc=opt_disc, opt_gen=opt_gen, l1=L1_LOSS, bce=BCE,
                  runtime_log_folder=runtime_log_folder, runtime_log_file_name=runtime_log_file_name)
 
-        if args.save_model and epoch % 10 == 0:
+        # if args.save_model and epoch % 10 == 0:
+        if args.save_model and epoch % 50 == 0:
             save_checkpoint(gen, opt_gen, epoch, args.checkpoint_gen)
             save_checkpoint(disc, opt_disc, epoch, args.checkpoint_disc)
 

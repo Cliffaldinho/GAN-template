@@ -14,7 +14,7 @@ from tqdm import tqdm  # tqdm for progress
 import io
 from Runtime import *
 from utils import *
-from ImageDataset import *
+from image_dataset_v1 import *
 import random
 from torchvision import transforms
 from DayDuskDataset import *

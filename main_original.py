@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm  # tqdm for progress
 from Runtime import *
 from utils import *
-from ImageDataset import *
+from image_dataset_v1 import *
 import random
 from torchvision import transforms
 
