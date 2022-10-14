@@ -102,56 +102,93 @@ class Generator(nn.Module):
 
 
     def forward(self, x):
-
+        print("x shape: ",x.shape)
         d1 = self.initial_down(x)
+        print("d1 shape: ",d1.shape)
+        print()
+
 
 
 
         d2 = self.down1(d1)
+        print("d2 shape: ", d2.shape)
+        print()
 
         d3 = self.down2(d2)
+        print("d3 shape: ", d3.shape)
+        print()
 
         d4 = self.down3(d3)
+        print("d4 shape: ", d4.shape)
+        print()
 
 
         d5 = self.down4(d4)
+        print("d5 shape: ", d5.shape)
+        print()
 
 
         d6 = self.down5(d5)
+        print("d6 shape: ", d6.shape)
+        print()
 
         d7 = self.down6(d6)
+        print("d7 shape: ", d7.shape)
+        print()
 
         bottleneck = self.bottleneck(d7)
+        print("bottleneck shape: ", bottleneck.shape)
+        print()
 
         up1 = self.up1(bottleneck)
+        print("up1 shape: ",up1.shape)
+        print()
+
 
         c1 = torch.cat([up1,d7],1)
-
+        print("concatenated 1 shape: ",c1.shape)
         up2 = self.up2(c1) # take output from previous, and concatenate with mirror element in encoder. concatenate along dim 1
+        print("up2 c1 and conved shape: ", up2.shape)
+        print()
 
         c2 = torch.cat([up2,d6],1)
-
+        print("concatenated 2 shape: ",c2.shape)
         up3 = self.up3(c2)
+        print("up3 c2 and conved shape: ", up3.shape)
+        print()
 
         c3 = torch.cat([up3, d5], 1)
-
+        print("concatenated 3 shape: ",c3.shape)
         up4 = self.up4(c3)
+        print("up4 c3 and conved shape: ", up4.shape)
+        print()
 
         c4 = torch.cat([up4, d4], 1)
-
+        print("concatenated 4 shape: ",c4.shape)
         up5 = self.up5(c4)
+        print("up5 c4 and conved shape: ", up5.shape)
+        print()
 
         c5 = torch.cat([up5, d3], 1)
+        print("concatenated 5 shape: ",c5.shape)
 
         up6 = self.up6(c5)
+        print("up6 c5 and conved shape: ", up6.shape)
+        print()
 
         c6 = torch.cat([up6, d2], 1)
+        print("concatenated 6 shape: ",c6.shape)
 
         up7 = self.up7(c6)
+        print("up7 c6 and conved shape: ", up7.shape)
+        print()
 
         c7 = torch.cat([up7,d1],1)
+        print("concatenated 7 shape: ",c7.shape)
 
         up8 = self.final_up(c7)
+        print("up8 (final up) c7 and conved shape: ", up8.shape)
+        print()
 
         return up8
 
