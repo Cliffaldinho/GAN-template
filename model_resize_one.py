@@ -20,18 +20,18 @@ class Residual(nn.Module):
 
     def forward(self, X):
         #print("Residual block start X: ",X.shape)
-        Y = self.conv1(X)
+        #Y = self.conv1(X)
         #print("Residual block conv1 X: ",Y.shape)
-        Y = self.bn1(Y)
+        #Y = self.bn1(Y)
         #print("Residual block bn1 Y: ",Y.shape)
-        Y = F.relu(Y)
+        #Y = F.relu(Y)
         #print("Residual block relu Y finish first: ",Y.shape)
         Y = F.relu(self.bn1(self.conv1(X)))
         #print("Residual block after first section Y: ",Y.shape)
 
-        Y = self.conv2(Y)
+        #Y = self.conv2(Y)
         #print("Residual block conv2 Y: ",Y.shape)
-        Y = self.bn2(Y)
+        #Y = self.bn2(Y)
         #print("Residual block bn2 Y finish second: ",Y.shape)
         Y = self.bn2(self.conv2(Y))
         #print("Residual block after second conv Y: ",Y.shape)
