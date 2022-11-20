@@ -51,12 +51,12 @@ class Resizer(nn.Module):
     def __init__(self, in_channels=6, out_channels=3, features=64):
         super().__init__()
         #self.res1 = Residual(in_channels,features,use_1x1conv=True)
-        self.conv_in = nn.Conv2d(in_channels, features, 3, 1, 1, bias=False, padding_mode='reflect')
+        self.conv_in = nn.Conv2d(in_channels, features, 3, 1, 1, bias=True, padding_mode='reflect')
         self.res1 = Residual(features, features)
         self.res2 = Residual(features, features)
         self.res3 = Residual(features, features)
         self.res4 = Residual(features,features)
-        self.conv_out = nn.Conv2d(features,out_channels, 3, 1, 1, bias=False, padding_mode='reflect')
+        self.conv_out = nn.Conv2d(features,out_channels, 3, 1, 1, bias=True, padding_mode='reflect')
         #self.res5 = Residual(features, in_channels,use_1x1conv=True)
 
     def forward(self, x):
