@@ -91,12 +91,13 @@ if __name__ == '__main__':
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     resizer = Resizer().to(device)
-    optimizer = optim.Adam(resizer.parameters(), lr=0.01, betas=(0.5, 0.999))
+    #optimizer = optim.Adam(resizer.parameters(), lr=0.01, betas=(0.5, 0.999))
+    optimizer = optim.AdamW(resizer.parameters(), lr=0.0003, betas=(0.5, 0.999))
     L1_LOSS = nn.L1Loss()
 
     # if model is loaded
     if args.load_model:
-        resizer, optimizer = load_checkpoint(checkpoint_filename="resizer.pt",model = resizer,optimizer=optimizer,lr=0.01)
+        resizer, optimizer = load_checkpoint(checkpoint_filename="resizer.pt",model = resizer,optimizer=optimizer,lr=0.0003)
 
     runtime_dict = ast.literal_eval(os.environ['SM_HP_RUNTIME_VAR'])
     dataset_key = runtime_dict['dataset_key']
